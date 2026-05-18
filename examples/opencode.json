@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    [
+      "opencode-sticky-retry",
+      {
+        "sticky": true,
+        "initialDelayMs": 1000,
+        "maxDelayMs": 60000,
+        "backoffFactor": 2,
+        "jitter": "equal",
+        "honorRetryAfter": true,
+        "nonRetriableStatusCodes": [],
+        "retriableStatusCodes": [],
+        "nonRetriableErrorPatterns": [
+          "invalid api key",
+          "authentication"
+        ],
+        "nonRetriableBodyPatterns": [
+          "context length",
+          "content policy"
+        ],
+        "log": true,
+        "logLevel": "info"
+      }
+    ]
+  ]
+}

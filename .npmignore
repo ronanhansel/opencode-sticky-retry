@@ -1,0 +1,6 @@
+src/
+examples/
+.opencode/
+tsconfig.json
+.gitignore
+*.tgz

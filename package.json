@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "opencode-sticky-retry",
+  "version": "0.1.0",
+  "description": "Configurable sticky retry plugin for opencode. Keeps retrying provider requests with backoff until success, a non-retriable rule matches, or the user aborts.",
+  "license": "MIT",
+  "author": {
+    "name": "Ronan Hansel",
+    "email": "ronanhansel@gmail.com"
+  },
+  "homepage": "https://github.com/ronanhansel/opencode-sticky-retry#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ronanhansel/opencode-sticky-retry.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ronanhansel/opencode-sticky-retry/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "retry",
+    "resilience",
+    "backoff",
+    "sticky"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.10.0"
+  },
+  "peerDependenciesMeta": {
+    "@opencode-ai/plugin": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.15.4",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0"
+  }
+}
