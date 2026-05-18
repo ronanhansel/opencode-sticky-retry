@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "opencode-sticky-retry",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Configurable sticky retry plugin for opencode. Keeps retrying provider requests with backoff until success, a non-retriable rule matches, or the user aborts.",
   "license": "MIT",
   "author": {
