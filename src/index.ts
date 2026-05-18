@@ -4,8 +4,10 @@ import { resolveConfig } from "./config.js"
 import { createStickyFetch, makeLevelFilteredLogger, type Logger } from "./retry.js"
 import type { StickyRetryConfig } from "./types.js"
 
-export * from "./types.js"
-export { DEFAULT_PROVIDER_HOSTS } from "./config.js"
+// Re-export type-only surface for TS consumers. Type exports compile to a
+// no-op at runtime so opencode's plugin loader (which iterates every runtime
+// export and rejects non-function values) does not see them.
+export type { StickyRetryConfig, ResolvedConfig, RetryDecision } from "./types.js"
 
 const INSTALLED_FLAG = Symbol.for("opencode-sticky-retry.installed")
 
@@ -87,4 +89,3 @@ const stickyRetryPlugin: Plugin = async (ctx: PluginInput, options?: PluginOptio
 }
 
 export default stickyRetryPlugin
-export { stickyRetryPlugin }

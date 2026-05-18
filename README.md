@@ -140,6 +140,30 @@ and project scopes. The wrapper:
    `nonRetriableErrorPatterns` and either re-throws or sleeps and retries.
 6. The sleep is interruptible by the request's abort signal.
 
+### Recommended escape hatches
+
+Sticky retry is a hammer. Some failures are deterministic and will never
+succeed no matter how many times you retry. The most common ones:
+
+- **`400 Bad Request`** — the request body is malformed, retrying produces the same error.
+- **`401 Unauthorized` / `403 Forbidden`** — auth issues, fix the credentials instead.
+- **`422 Unprocessable Entity`** — request shape is wrong (often model-id mismatch with the provider).
+- **Context-window exceeded** — provider returns a specific error in the body.
+
+A reasonable starting point:
+
+```jsonc
+{
+  "plugin": [["opencode-sticky-retry", {
+    "nonRetriableStatusCodes": [400, 401, 403, 422],
+    "nonRetriableBodyPatterns": ["context length", "context_length_exceeded", "content policy"]
+  }]]
+}
+```
+
+These are deliberately **not** defaults — the plugin's whole point is that
+you decide what to opt out of, not the other way around.
+
 ### Limitations
 
 - Mid-stream disconnects (token stream cut after the response started) are
