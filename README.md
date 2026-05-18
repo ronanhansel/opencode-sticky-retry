@@ -234,6 +234,44 @@ npm run build
 The package targets Node 18+ / Bun. opencode installs plugins through Bun, so
 the build output is plain ESM.
 
+## Releasing
+
+Releases are cut by publishing a GitHub Release. The
+[`release` workflow](.github/workflows/release.yml) builds, typechecks,
+and publishes to npm with [provenance](https://docs.npmjs.com/generating-provenance-statements)
+via npm Trusted Publishing — there is no long-lived `NPM_TOKEN`.
+
+Steps for a new version:
+
+1. Bump `version` in `package.json` and commit on `main`.
+2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. Create a GitHub Release for that tag (`gh release create vX.Y.Z`).
+   The workflow runs on `release: published`.
+4. The workflow asserts `tag == package.json version`, runs the build,
+   then `npm publish --provenance --access public`.
+
+### One-time npm setup (Trusted Publishing)
+
+Required only for the first release on npm — without this, the OIDC
+publish will fail.
+
+1. Sign in at [npmjs.com](https://www.npmjs.com/) as the package owner.
+2. Open the package settings page (`Settings` → `Publishing access`).
+3. Add a **Trusted Publisher**:
+   - Organization or user: `ronanhansel`
+   - Repository: `opencode-sticky-retry`
+   - Workflow filename: `release.yml`
+   - Environment: `npm`
+4. Save. Subsequent GitHub Releases will publish automatically.
+
+The repository already has an `npm` environment referenced in the
+workflow; GitHub creates it on first run if it does not exist. You can
+optionally add required reviewers to that environment if you want a
+manual approval step before each publish.
+
+Manual republish of an existing tag is also supported via
+`workflow_dispatch` (`Actions` → `release` → `Run workflow`).
+
 ## License
 
 MIT

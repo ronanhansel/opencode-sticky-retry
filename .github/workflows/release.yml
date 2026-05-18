@@ -1,0 +1,70 @@
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to publish (e.g. v0.2.0). Leave blank to use the current ref."
+        required: false
+
+# Required for npm Trusted Publishing (OIDC) and for the action to be able to
+# attach a provenance attestation to the published tarball.
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish to npm
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/opencode-sticky-retry
+
+    steps:
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Verify package version matches release tag
+        if: github.event_name == 'release'
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          tag_version="${tag#v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Tag $tag (=> $tag_version) does not match package.json version $pkg_version"
+            exit 1
+          fi
+          echo "Publishing version $pkg_version"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm with provenance
+        # Trusted Publishing: no NODE_AUTH_TOKEN needed. The OIDC token from
+        # `id-token: write` is exchanged for a short-lived npm credential by
+        # the registry. Requires a one-time Trusted Publisher configuration
+        # on npmjs.com (Publishing access) pointing at this repo + workflow.
+        run: npm publish --provenance --access public
