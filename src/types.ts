@@ -122,6 +122,47 @@ export interface StickyRetryConfig {
    * @default "info"
    */
   logLevel?: "debug" | "info" | "warn" | "error"
+
+  /**
+   * Surface retry activity through opencode's TUI toast system so the
+   * user knows the agent is waiting on retries (and why) instead of
+   * looking frozen. Each toast includes the host, reason, and the full
+   * error / response body excerpt (truncated for readability — never
+   * omitted) so the user can see *what* failed, not just the status code.
+   *
+   * - `"off"`: no toasts.
+   * - `"events"`: a toast on every retry, on recovery, and when the
+   *   plugin gives up. (default)
+   * - `"verbose"`: same as `events`, but does NOT suppress per-retry
+   *   toasts during fast initial bursts. Use this if you want every
+   *   single attempt surfaced regardless of backoff length.
+   * @default "events"
+   */
+  notify?: "off" | "events" | "verbose"
+
+  /**
+   * In `notify: "events"`, suppress per-retry toasts whose backoff is
+   * shorter than this so a tight initial burst doesn't spam the TUI.
+   * Set to `0` to never suppress (every retry gets a toast). `verbose`
+   * mode ignores this entirely.
+   * @default 0
+   */
+  notifyMinDelayMs?: number
+
+  /**
+   * Minimum gap (ms) between consecutive toasts for the same phase.
+   * Bursts inside this window are coalesced into one toast. Set to `0`
+   * to disable throttling and surface every retry (default).
+   * @default 0
+   */
+  notifyThrottleMs?: number
+
+  /**
+   * Default `duration` (ms) used when emitting toasts. opencode's TUI
+   * controls the actual presentation; this is just a hint.
+   * @default 6000
+   */
+  notifyDurationMs?: number
 }
 
 export type ResolvedConfig = Required<

@@ -1,13 +1,14 @@
 import type { Plugin, PluginInput, PluginOptions } from "@opencode-ai/plugin"
 
 import { resolveConfig } from "./config.js"
-import { createStickyFetch, makeLevelFilteredLogger, type Logger } from "./retry.js"
+import { createStickyFetch, formatNotifyEvent, makeLevelFilteredLogger, type Logger, type Notifier } from "./retry.js"
 import type { StickyRetryConfig } from "./types.js"
 
 // Re-export type-only surface for TS consumers. Type exports compile to a
 // no-op at runtime so opencode's plugin loader (which iterates every runtime
 // export and rejects non-function values) does not see them.
 export type { StickyRetryConfig, ResolvedConfig, RetryDecision } from "./types.js"
+export type { Notifier, NotifyEvent } from "./retry.js"
 
 const INSTALLED_FLAG = Symbol.for("opencode-sticky-retry.installed")
 
@@ -51,6 +52,38 @@ const stickyRetryPlugin: Plugin = async (ctx: PluginInput, options?: PluginOptio
   }
   const log = makeLevelFilteredLogger(config, sink)
 
+  // Notifier sink: surface retry activity via opencode's TUI toast.
+  // Fire-and-forget so retry decisions never wait on the UI.
+  const notifySink: Notifier = (event) => {
+    if (config.notify === "off") return
+    const toast = formatNotifyEvent(event)
+    try {
+      const tui = (ctx.client as { tui?: { showToast?: (input: unknown) => unknown } }).tui
+      const showToast = tui?.showToast?.bind(tui)
+      if (typeof showToast !== "function") {
+        // Older opencode without TUI toast API: silently degrade.
+        log("debug", "[sticky-retry] client.tui.showToast unavailable, skipping toast", {
+          phase: event.phase,
+        })
+        return
+      }
+      void Promise.resolve(
+        showToast({
+          body: {
+            title: toast.title,
+            message: toast.message,
+            variant: toast.variant,
+            duration: config.notifyDurationMs,
+          },
+        }),
+      ).catch(() => {
+        // ignore toast failures
+      })
+    } catch {
+      // ignore toast failures
+    }
+  }
+
   if (!config.enabled) {
     log("info", "[sticky-retry] disabled via config")
     return {}
@@ -67,7 +100,7 @@ const stickyRetryPlugin: Plugin = async (ctx: PluginInput, options?: PluginOptio
   }
 
   const originalFetch = globalThis.fetch.bind(globalThis)
-  const wrapped = createStickyFetch({ baseFetch: originalFetch, config, log })
+  const wrapped = createStickyFetch({ baseFetch: originalFetch, config, log, notify: notifySink })
   globalThis.fetch = wrapped as typeof fetch
   g[INSTALLED_FLAG] = true
 
@@ -83,6 +116,7 @@ const stickyRetryPlugin: Plugin = async (ctx: PluginInput, options?: PluginOptio
     nonRetriableStatusCodes: config.nonRetriableStatusCodes,
     nonRetriableErrorPatterns: config.nonRetriableErrorPatterns.map((r) => r.source),
     nonRetriableBodyPatterns: config.nonRetriableBodyPatterns.map((r) => r.source),
+    notify: config.notify,
   })
 
   return {}

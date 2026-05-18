@@ -21,7 +21,8 @@
           "content policy"
         ],
         "log": true,
-        "logLevel": "info"
+        "logLevel": "info",
+        "notify": "events"
       }
     ]
   ]

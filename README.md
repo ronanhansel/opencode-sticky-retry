@@ -72,7 +72,8 @@ Pass options as the second tuple element:
       "nonRetriableErrorPatterns": ["invalid api key"],
       "nonRetriableBodyPatterns": ["content policy"],
       "log": true,
-      "logLevel": "info"
+      "logLevel": "info",
+      "notify": "events"
     }]
   ]
 }
@@ -97,6 +98,10 @@ Pass options as the second tuple element:
 | `urlAllowlist`               | `string[]`                    | curated provider list                       | Substring or `/regex/flags`. Use `["*"]` to apply to every fetch. |
 | `log`                        | `boolean`                     | `true`                                      | Emit retry events through opencode's logger. |
 | `logLevel`                   | `"debug" \| "info" \| "warn" \| "error"` | `"info"`                       | Floor for emitted events. |
+| `notify`                     | `"off" \| "events" \| "verbose"` | `"events"`                              | Surface retry activity via TUI toasts. See [Notifications](#notifications). |
+| `notifyMinDelayMs`           | `number`                      | `0`                                         | In `events` mode, suppress per-retry toasts whose backoff is shorter than this (set `>0` to mute fast initial bursts). `verbose` ignores it. |
+| `notifyThrottleMs`           | `number`                      | `0`                                         | Minimum gap (ms) between consecutive toasts for the same phase. `0` disables. |
+| `notifyDurationMs`           | `number`                      | `6000`                                      | Hint for how long opencode should keep each toast on screen. |
 
 ### Default URL allowlist
 
@@ -179,6 +184,44 @@ you decide what to opt out of, not the other way around.
 When `log: true`, retry events are sent through `client.app.log()` with the
 service name `opencode-sticky-retry`. They appear in opencode's normal log
 stream alongside other plugin output.
+
+## Notifications
+
+When `notify` is set to anything other than `"off"`, the plugin uses
+opencode's TUI toast API (`client.tui.showToast`) to surface retry
+activity to the user. The session no longer looks frozen during a long
+outage — the user sees *why* the agent is waiting and roughly how long
+until the next attempt.
+
+Each toast carries:
+
+- The host that failed (e.g. `api.anthropic.com`).
+- A short reason: `HTTP 503`, `ECONNRESET`, `fetch failed`, etc.
+- The full error message (with cause chain) for transport errors, or a
+  body excerpt (first 4 KB, whitespace-collapsed, capped at 600 chars)
+  for HTTP failures. This is **never omitted** — the goal is for the
+  user to be able to read what the provider actually said.
+- The time until the next attempt, when applicable.
+
+Phases:
+
+- `retry` — emitted on **every** failed attempt that triggers a retry.
+  Toast variant is `warning`. The `first` flag distinguishes the initial
+  failure from subsequent ones in the toast text.
+- `recovered` — emitted on the first successful response after one or
+  more retries. Variant is `success`.
+- `gave_up` — emitted in non-sticky mode when `maxAttempts` is reached.
+  Variant is `error`.
+
+By default (`notify: "events"`, `notifyThrottleMs: 0`,
+`notifyMinDelayMs: 0`) every retry produces a toast. If a fast initial
+burst is too noisy, raise `notifyMinDelayMs` (or `notifyThrottleMs`) so
+opencode coalesces those into fewer toasts. `notify: "verbose"` ignores
+`notifyMinDelayMs` entirely and surfaces every retry no matter how
+short the backoff.
+
+If you are running an older opencode build that does not expose
+`client.tui.showToast`, the plugin silently degrades and only logs.
 
 ## Development
 

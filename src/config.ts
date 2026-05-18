@@ -47,6 +47,10 @@ export const DEFAULT_CONFIG: ResolvedConfig = {
   urlAllowlist: DEFAULT_PROVIDER_HOSTS,
   log: true,
   logLevel: "info",
+  notify: "events",
+  notifyMinDelayMs: 0,
+  notifyThrottleMs: 0,
+  notifyDurationMs: 6_000,
 }
 
 const compilePattern = (p: string | RegExp): RegExp => {
@@ -76,5 +80,9 @@ export const resolveConfig = (input: StickyRetryConfig | undefined): ResolvedCon
     urlAllowlist: cfg.urlAllowlist ?? DEFAULT_CONFIG.urlAllowlist,
     log: cfg.log ?? DEFAULT_CONFIG.log,
     logLevel: cfg.logLevel ?? DEFAULT_CONFIG.logLevel,
+    notify: cfg.notify ?? DEFAULT_CONFIG.notify,
+    notifyMinDelayMs: Math.max(0, cfg.notifyMinDelayMs ?? DEFAULT_CONFIG.notifyMinDelayMs),
+    notifyThrottleMs: Math.max(0, cfg.notifyThrottleMs ?? DEFAULT_CONFIG.notifyThrottleMs),
+    notifyDurationMs: Math.max(0, cfg.notifyDurationMs ?? DEFAULT_CONFIG.notifyDurationMs),
   }
 }
